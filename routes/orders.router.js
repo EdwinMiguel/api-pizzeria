@@ -1,24 +1,25 @@
-const express = require('express')
+const express = require('express');
 
-const OrderService = require('../services/order.service')
-const service = new OrderService
+const OrderService = require('../services/order.service');
+const service = new OrderService;
 
-const router = express.Router()
+const router = express.Router();
 
 router.get('/', async (req, res) => {
-    const orders = await service.find()
+    const orders = await service.find();
+
     if (orders.length === 0) {
-     res.send("Aún no hay pedidos.")
+     res.send("Aún no hay pedidos.");
     } else {
-     res.json(orders)
+     res.json(orders);
     }
 
-})
+});
 
 router.post('/', async (req, res) => {
-  const body = req.body
-  const newOrder = await service.create(body)
-  res.json(newOrder)
-})
+  const body = req.body;
+  const newOrder = await service.create(body);
+  res.json(newOrder);
+});
 
-module.exports = router
+module.exports = router;

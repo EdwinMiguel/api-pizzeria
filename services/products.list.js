@@ -1,5 +1,10 @@
 const products = [
-  "ATÚN",
+  {
+    "id": 1,
+    "name":"ATÚN",
+    "price": 140,
+    "stock": 100
+  },
   "AZUCAR BLANCA",
   "AZÚCAR MORENA",
   "CALDO DE POLLO",

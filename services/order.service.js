@@ -1,8 +1,6 @@
-const products = require("./products.list")
-
 class OrderService {
   constructor () {
-    this.orders = []
+    this.orders = [];
   }
 
   find () {
@@ -25,6 +23,7 @@ class OrderService {
     this.orders.push(newOrder)
     return newOrder
   }
+
 }
 
 module.exports = OrderService
