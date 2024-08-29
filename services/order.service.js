@@ -80,8 +80,6 @@ class OrderService {
       }
     });
 
-    console.log('order', order)
-
     const resource = {
       values: [
         order,
