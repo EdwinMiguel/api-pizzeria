@@ -21,17 +21,19 @@ class OrderService {
       data.shift();
       const options = await this.getOrderOptions();
 
-      data.forEach((sheetOrder) => {
-        let keyValue = {};
+      const orders = data.map((sheetOrder) => {
+        let order = {};
         options[0].forEach((key, index) => {
 
           if (sheetOrder[index] !== '') {
-            keyValue[key] = sheetOrder[index];
+            order[key] = sheetOrder[index];
           }
         });
 
-        this.orders.push(keyValue);
+        return order;
       });
+
+      this.orders = orders;
 
       return this.orders;
 
