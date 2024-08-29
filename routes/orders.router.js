@@ -16,10 +16,25 @@ router.get('/', async (req, res) => {
 
 });
 
+router.get('/options', async (req, res) => {
+  const optionsList = await service.getOrderOptions();
+
+  if (optionsList.length === 0) {
+    res.send("No se encotraron las opciones de pedido.");
+  } else {
+    res.json(optionsList);
+  }
+});
+
 router.post('/', async (req, res) => {
   const body = req.body;
-  const newOrder = await service.create(body);
-  res.json(newOrder);
+
+  try {
+    await service.appendOrder(body);
+    res.status(200).send('Pedido recibido y resgistrado en Google Sheets.');
+  } catch (error) {
+    res.status(500).send('Error al registrar el pedido');
+  }
 });
 
 module.exports = router;
