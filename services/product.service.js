@@ -1,10 +1,51 @@
+const { google } = require('googleapis');
+
 class ProductsService {
   constructor () {
     this.products = [];
   }
 
-  async getProducts () {
-    return this.products;
+  async find () {
+    const spreadsheetId = '1VBk8B9E2uA98Zs3yEqrTl1uFqsRWNVG06LAlqIFazrs';
+    const range = "LISTA PRECIOS";
+
+    try {
+      const auth = new google.auth.GoogleAuth({
+        credentials: {
+          private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+          client_email: process.env.GOOGLE_CLIENT_EMAIL,
+        },
+        project_id: process.env.GOOGLE_PROJECT_ID,
+        scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+      });
+
+      const client = await auth.getClient();
+      const sheetsApi = google.sheets({
+        version: 'v4',
+        auth: client
+      });
+
+      const response = await sheetsApi.spreadsheets.values.get({
+        spreadsheetId,
+        range,
+      });
+      const data = response.data.values;
+      data.shift();
+
+      const products = data;
+      products.forEach(item => {
+        const product = {
+          id: item[0],
+          name: item[1],
+          price: item[2]
+        }
+        this.products.push(product);
+      })
+      return this.products;
+    } catch (error) {
+      console.error(error);
+    }
+
   }
 
   async save (product) {
