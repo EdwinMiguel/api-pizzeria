@@ -23,7 +23,7 @@ class OrderService {
 
       const orders = data.map((sheetOrder) => {
         let order = {};
-        options[0].forEach((key, index) => {
+        options.forEach((key, index) => {
 
           if (sheetOrder[index] !== '') {
             order[key] = sheetOrder[index];
@@ -45,15 +45,15 @@ class OrderService {
   async getOrderOptions() {
     const sheetsApi = await this.getGoogleSheetsClient();
     const spreadsheetId = '1VBk8B9E2uA98Zs3yEqrTl1uFqsRWNVG06LAlqIFazrs';
-    const range = "PRUEBA BD VERCEL!A1:AP1";
+    const range = "PRUEBA BD VERCEL";
 
     try {
       const response = await sheetsApi.spreadsheets.values.get({
         spreadsheetId,
         range,
       });
-      const values = response.data.values;
-
+      const values = response.data.values[0];
+      this.orderOptions = values;
       return values;
     } catch (error) {
       console.error('Error al obtener los pedidos:', error);
@@ -104,7 +104,7 @@ class OrderService {
   async getData() {
     const sheetsApi = await this.getGoogleSheetsClient();
     const spreadsheetId = '1VBk8B9E2uA98Zs3yEqrTl1uFqsRWNVG06LAlqIFazrs';
-    const range = "PRUEBA BD VERCEL!A:AP";
+    const range = "PRUEBA BD VERCEL";
 
     try {
       const response = await sheetsApi.spreadsheets.values.get({
