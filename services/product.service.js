@@ -31,7 +31,7 @@ class ProductsService {
       });
       const data = response.data.values;
       data.shift();
-
+      const productsList = [];
       const products = data;
       products.forEach(item => {
         const product = {
@@ -39,8 +39,10 @@ class ProductsService {
           name: item[1],
           price: item[2]
         }
-        this.products.push(product);
+        productsList.push(product);
       })
+      this.products = productsList;
+
       return this.products;
     } catch (error) {
       console.error(error);
