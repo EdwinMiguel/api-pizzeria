@@ -1,5 +1,4 @@
 const { google } = require('googleapis');
-const path = require('path');
 const { generateUniqueId } = require('../utils/generateUniqueId')
 
 class OrderService {
@@ -68,21 +67,55 @@ class OrderService {
     const range = 'CANTIDAD PEDIDOS';
     const valueInputOption = 'USER_ENTERED';
 
-    const formData = Object.entries(orderData);
-    const data = await this.getData();
-    // const orderId = generateUniqueId();
-    // console.log(orderId);
-    console.log(Object.entries(orderData[1]));
+    const data = await this.getData(range);
+
+    const orderId = await generateUniqueId();
+
+
     const order = [];
     const options = data.data.values[0];
+    console.log(options);
 
-    options.forEach(option => {
-      const contain = formData.find(element => element.includes(option));
-      if (contain === undefined) {
-        order.push('');
-      } else if (contain[0] === option) {
-        order.push(contain[1]);
+    const date = () => {
+      const now = new Date();
+
+      // Obtener componentes de la fecha
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0'); // Los meses van de 0 a 11
+      const day = String(now.getDate()).padStart(2, '0');
+
+      // Obtener componentes de la hora
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+
+      // Crear string formateado
+      const timestamp = `${year}-${month}-${day} ${hours}:${minutes}`;
+
+      return timestamp;
+    }
+
+    options.forEach(option => order.push(''));
+
+    options.forEach((header, headerIndex) => {
+      if (header === "Marca temporal") {
+        order[headerIndex] = date();
+      } else if (header === "ID PEDIDO") {
+        order[headerIndex] = orderId;
+      } else if (header === "SEDE") {
+        order[headerIndex] = orderData.SEDE;
+      } else if (header === "FECHA ENTREGA") {
+        order[headerIndex] = orderData['FECHA ENTREGA'];
+      } else if (header === "ESTADO") {
+        order[headerIndex] = 'pendiente';
+      } else if (header === "OBSERVACIONES") {
+        order[headerIndex] = orderData.OBSERVACIONES;
       }
+
+      orderData.products.forEach(product => {
+        if (product.name === header) {
+          order[headerIndex] = product.quantity;
+        }
+      });
     });
 
     const resource = {
@@ -91,23 +124,62 @@ class OrderService {
       ]
     };
 
+    const orderPricesSheetName = 'PRECIO PRODUCTOS';
+    const orderPricesSheetData = await this.getData(orderPricesSheetName);
+    const orderPricesHeaders = orderPricesSheetData.data.values[0];
+    const orderPrices = [];
+
+    orderPricesHeaders.forEach(() => orderPrices.push(''));
+
+    orderPricesHeaders.forEach((header, headerIndex) => {
+      if (header === "ID PEDIDO") {
+        orderPrices[headerIndex] = orderId;
+      } else if (header === 'VALOR NETO') {
+        orderPrices[headerIndex] = orderData.orderPrice;
+      } else if (header === 'VALOR CON SERVICIO') {
+        orderPrices[headerIndex] = orderData.finalPrice;
+      }
+
+      orderData.products.forEach(product => {
+        if (product.name === header) {
+          orderPrices[headerIndex] = product.totalPrice;
+        }
+      });
+    })
+    console.log(orderPrices);
+
+    const orderPricesResource = {
+      values: [
+        orderPrices,
+      ]
+    };
+
     try {
       const response = await sheetsApi.spreadsheets.values.append({
-        spreadsheetId,
-        range,
-        valueInputOption,
-        resource,
+        spreadsheetId: spreadsheetId,
+        range: range,
+        valueInputOption: valueInputOption,
+        resource: resource,
       });
+
+      const responseOrderPrices = await sheetsApi.spreadsheets.values.append({
+        spreadsheetId: spreadsheetId,
+        range: orderPricesSheetName,
+        valueInputOption: valueInputOption,
+        resource: orderPricesResource,
+      });
+
       console.log(`${response.data.updates.updatedCells} celdas actualizadas.`);
+      console.log(`${responseOrderPrices.data.updates.updatedCells} celdas actualizadas.`);
     } catch (error) {
       console.error('Error al escribir en Google Sheets:', error);
     }
   }
 
-  async getData() {
+  async getData(sheetName) {
     const sheetsApi = await this.getGoogleSheetsClient();
     const spreadsheetId = '1VBk8B9E2uA98Zs3yEqrTl1uFqsRWNVG06LAlqIFazrs';
-    const range = "CANTIDAD PEDIDOS";
+    const range = sheetName;
 
     try {
       const response = await sheetsApi.spreadsheets.values.get({
@@ -139,7 +211,6 @@ class OrderService {
     return sheetsApi;
   }
 
-
 }
 
-module.exports = OrderService
+module.exports = OrderService;
