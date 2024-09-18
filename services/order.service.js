@@ -10,7 +10,7 @@ class OrderService {
   async find() {
     const sheetsApi = await this.getGoogleSheetsClient();
     const spreadsheetId = '1VBk8B9E2uA98Zs3yEqrTl1uFqsRWNVG06LAlqIFazrs';
-    const range = "PRUEBA BD VERCEL";
+    const range = "CANTIDAD PEDIDOS";
 
     try {
       const response = await sheetsApi.spreadsheets.values.get({
@@ -20,7 +20,7 @@ class OrderService {
       const data = response.data.values;
       data.shift();
       const options = await this.getOrderOptions();
-
+      console.log(data);
       const orders = data.map((sheetOrder) => {
         let order = {};
         options.forEach((key, index) => {
@@ -45,7 +45,7 @@ class OrderService {
   async getOrderOptions() {
     const sheetsApi = await this.getGoogleSheetsClient();
     const spreadsheetId = '1VBk8B9E2uA98Zs3yEqrTl1uFqsRWNVG06LAlqIFazrs';
-    const range = "PRUEBA BD VERCEL";
+    const range = "CANTIDAD PEDIDOS";
 
     try {
       const response = await sheetsApi.spreadsheets.values.get({
