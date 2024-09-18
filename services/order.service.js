@@ -73,7 +73,7 @@ class OrderService {
 
 
     const order = [];
-    const options = data.data.values[0];
+    const options = data.data.values[0].map(header => header.trim());
     console.log(options);
 
     const date = () => {
@@ -126,7 +126,7 @@ class OrderService {
 
     const orderPricesSheetName = 'PRECIO PRODUCTOS';
     const orderPricesSheetData = await this.getData(orderPricesSheetName);
-    const orderPricesHeaders = orderPricesSheetData.data.values[0];
+    const orderPricesHeaders = orderPricesSheetData.data.values[0].map(header => header.trim());
     const orderPrices = [];
 
     orderPricesHeaders.forEach(() => orderPrices.push(''));
