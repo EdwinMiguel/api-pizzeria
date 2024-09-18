@@ -78,20 +78,21 @@ class OrderService {
 
     const date = () => {
       const now = new Date();
+      // Convertir a hora de Colombia (UTC-5)
+      const colombiaTime = new Date(now.getTime() - (5 * 60 * 60 * 1000));
 
-      // Obtener componentes de la fecha
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, '0'); // Los meses van de 0 a 11
-      const day = String(now.getDate()).padStart(2, '0');
-
-      // Obtener componentes de la hora
-      const hours = String(now.getHours()).padStart(2, '0');
-      const minutes = String(now.getMinutes()).padStart(2, '0');
+      // Formatear la fecha y hora
+      const year = colombiaTime.getUTCFullYear();
+      const month = String(colombiaTime.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(colombiaTime.getUTCDate()).padStart(2, '0');
+      const hours = String(colombiaTime.getUTCHours()).padStart(2, '0');
+      const minutes = String(colombiaTime.getUTCMinutes()).padStart(2, '0');
 
       // Crear string formateado
       const timestamp = `${year}-${month}-${day} ${hours}:${minutes}`;
 
       return timestamp;
+
     }
 
     options.forEach(option => order.push(''));
