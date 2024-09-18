@@ -1,5 +1,6 @@
 const { google } = require('googleapis');
 const path = require('path');
+const { generateUniqueId } = require('../utils/generateUniqueId')
 
 class OrderService {
   constructor () {
@@ -64,12 +65,14 @@ class OrderService {
     const sheetsApi = await this.getGoogleSheetsClient();
 
     const spreadsheetId = '1VBk8B9E2uA98Zs3yEqrTl1uFqsRWNVG06LAlqIFazrs';
-    const range = 'PRUEBA BD VERCEL';
+    const range = 'CANTIDAD PEDIDOS';
     const valueInputOption = 'USER_ENTERED';
 
     const formData = Object.entries(orderData);
     const data = await this.getData();
-
+    // const orderId = generateUniqueId();
+    // console.log(orderId);
+    console.log(Object.entries(orderData[1]));
     const order = [];
     const options = data.data.values[0];
 
@@ -104,7 +107,7 @@ class OrderService {
   async getData() {
     const sheetsApi = await this.getGoogleSheetsClient();
     const spreadsheetId = '1VBk8B9E2uA98Zs3yEqrTl1uFqsRWNVG06LAlqIFazrs';
-    const range = "PRUEBA BD VERCEL";
+    const range = "CANTIDAD PEDIDOS";
 
     try {
       const response = await sheetsApi.spreadsheets.values.get({
