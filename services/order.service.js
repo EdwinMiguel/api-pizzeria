@@ -19,7 +19,7 @@ class OrderService {
         range: range,
       });
       const ordersSheetData = ordersSheet.data.values;
-      const ordersSheetHeaders = ordersSheetData[0];
+      const ordersSheetHeaders = ordersSheetData[0].map(header => header.trim());
       ordersSheetData.shift();
 
       const ordersPricesSheet = await sheetsApi.spreadsheets.values.get({
@@ -27,7 +27,7 @@ class OrderService {
         range: orderPricesRange,
       });
       const ordersPricesData = ordersPricesSheet.data.values;
-      const ordersPricesHeaders = ordersPricesData[0];
+      const ordersPricesHeaders = ordersPricesData[0].map(header => header.trim());
       ordersPricesData.shift();
 
       const ordersWithOutPrices = ordersSheetData.map(row => {
