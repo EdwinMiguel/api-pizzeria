@@ -11,32 +11,85 @@ class OrderService {
     const sheetsApi = await this.getGoogleSheetsClient();
     const spreadsheetId = '1VBk8B9E2uA98Zs3yEqrTl1uFqsRWNVG06LAlqIFazrs';
     const range = "CANTIDAD PEDIDOS";
+    const orderPricesRange = 'PRECIO PRODUCTOS';
 
     try {
-      const response = await sheetsApi.spreadsheets.values.get({
-        spreadsheetId,
-        range,
+      const ordersSheet = await sheetsApi.spreadsheets.values.get({
+        spreadsheetId: spreadsheetId,
+        range: range,
       });
-      const data = response.data.values;
-      data.shift();
-      const options = await this.getOrderOptions();
-      console.log(data);
-      const orders = data.map((sheetOrder) => {
-        let order = {};
-        options.forEach((key, index) => {
+      const ordersSheetData = ordersSheet.data.values;
+      const ordersSheetHeaders = ordersSheetData[0];
+      ordersSheetData.shift();
 
-          if (sheetOrder[index] !== '') {
-            order[key] = sheetOrder[index];
+      const ordersPricesSheet = await sheetsApi.spreadsheets.values.get({
+        spreadsheetId: spreadsheetId,
+        range: orderPricesRange,
+      });
+      const ordersPricesData = ordersPricesSheet.data.values;
+      const ordersPricesHeaders = ordersPricesData[0];
+      ordersPricesData.shift();
+
+      const ordersWithOutPrices = ordersSheetData.map(row => {
+        let order = {
+          products: [],
+        }
+
+        ordersSheetHeaders.forEach((header , headerIndex) => {
+          if (header === 'Marca temporal') {
+            order[header] = row[headerIndex];
+          } else if (header === 'ID PEDIDO') {
+            order[header] = row[headerIndex];
+          } else if (header === 'SEDE') {
+            order[header] = row[headerIndex];
+          } else if (header === 'FECHA ENTREGA') {
+            order[header] = row[headerIndex];
+          } else if (header === 'ESTADO') {
+            order[header] = row[headerIndex];
+          } else if (header === 'OBSERVACIONES') {
+            order[header] = row[headerIndex];
+          } else {
+            if (row[headerIndex] !== '' && row[headerIndex] !== undefined) {
+            order.products.push({
+              name: header,
+              quantity: row[headerIndex],
+            });
+            }
           }
         });
 
         return order;
+
       });
 
-      this.orders = orders;
+        const orderPricesHeadersIndex = (index) => {
+          return ordersPricesHeaders.findIndex(header => header === index);
+        }
 
-      return this.orders;
+        ordersWithOutPrices.forEach(order => {
+          const headerIndex = orderPricesHeadersIndex('ID PEDIDO');
+          const currentPrices = ordersPricesData.find(row => row[headerIndex] === order['ID PEDIDO']);
 
+          if (currentPrices !== undefined) {
+            const newProducts = order.products.map(product => {
+              const headerIndex = orderPricesHeadersIndex(product.name);
+              return {
+                ...product,
+                totalPrice: currentPrices[headerIndex]
+              }
+            });
+
+            const netCostIndex = orderPricesHeadersIndex('VALOR NETO');
+            order.netCost = currentPrices[netCostIndex];
+            const costWithServiceIndex = orderPricesHeadersIndex('VALOR CON SERVICIO');
+            order.costWithService = currentPrices[costWithServiceIndex];
+
+            order.products = newProducts;
+          }
+        });
+
+        this.orders = ordersWithOutPrices;
+        return this.orders;
     } catch (error) {
       console.error('Error al obtener los pedidos:', error);
     }
