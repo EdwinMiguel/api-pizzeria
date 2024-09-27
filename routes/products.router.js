@@ -1,7 +1,6 @@
 const express = require('express');
 
 const ProductsService = require('./../services/product.service');
-
 const service = new ProductsService;
 
 const router = express.Router()
@@ -12,9 +11,13 @@ router.get('/', async (req, res) => {
 })
 
 router.post('/', async (req, res) => {
-  const body = req.body;
-  const newProduct = await service.save(body);
-  res.json(newProduct);
+  try {
+    const body = req.body;
+    const newProduct = await service.save(body);
+    res.json(newProduct);
+  } catch (error) {
+    console.log(error);
+  }
 })
 
 router.patch('/:id', async (req, res) => {
