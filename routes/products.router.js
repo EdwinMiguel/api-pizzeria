@@ -6,8 +6,8 @@ const service = new ProductsService;
 const router = express.Router()
 
 router.get('/', async (req, res) => {
-  const products = await service.find();
-  res.json(products);
+    const products = await service.find();
+    res.json(products);
 })
 
 router.post('/', async (req, res) => {
