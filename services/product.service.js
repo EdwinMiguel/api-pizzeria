@@ -80,6 +80,7 @@ class ProductsService {
         values: []
       }
 
+
       productsData.forEach((row, rowIndex)=> {
         if (row.includes(formData['product-name'])) {
           if (row.length < headers.length) {
@@ -94,6 +95,41 @@ class ProductsService {
         }
       });
       const response = await postValue(range, stockValue);
+
+
+      if (response.statusText === 'OK') {
+        const updatedData = await sheetsApi.spreadsheets.values.get({
+          spreadsheetId: spreadsheetId,
+          range: sheetName,
+        });
+        const data = updatedData.data.values.map(row => {
+          return row.map(value => value.trim());
+      });
+
+
+        let totalRange;
+        const totalValue = {
+          values: []
+        }
+
+        data.forEach((row, rowIndex) => {
+          if (row.includes(formData['product-name'])) {
+            if (row.length < headers.length) {
+              for (let index = row.length; index < headers.length; index++) {
+                row.push('');
+              }
+            };
+            totalRange = getCell('total', rowIndex + 1);
+            const priceIndex = headers.indexOf('precio');
+            const price = parseFloat(row[priceIndex].split('$').join('').split('.').join('').trim());
+            const stockIndex = headers.indexOf('stock');
+            const total = Number(row[stockIndex]) * Number(price);
+            totalValue.values.push([total]);
+          }
+        })
+        const totalResponse = await postValue(totalRange, totalValue);
+      } else {
+      }
       return response;
     } catch (error) {
       console.log(error);
