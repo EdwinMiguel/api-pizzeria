@@ -246,6 +246,64 @@ class OrderService {
     }
   }
 
+  async updateState(id, body) {
+    try {
+      const sheetsApi = await this.getGoogleSheetsClient();
+      const spreadsheetId = '1VBk8B9E2uA98Zs3yEqrTl1uFqsRWNVG06LAlqIFazrs';
+      const sheetName = "CANTIDAD PEDIDOS";
+      console.log(id, body);
+
+      const ordersSheet = await sheetsApi.spreadsheets.values.get({
+        spreadsheetId: spreadsheetId,
+        range: sheetName,
+      });
+      const ordersSheetData = ordersSheet.data.values;
+      const headers = ordersSheetData[0];
+
+      function getCell(headerName, rowIndex) {
+        const columnIndex = headers.indexOf(headerName);
+        const columnLetter = String.fromCharCode(65 + columnIndex);
+        const range = `${sheetName}!${columnLetter}${rowIndex}`;
+        return range;
+      }
+
+      let headerIndex = ordersSheetData[0].indexOf('ID PEDIDO');
+      let currentState;
+      let rowNumber;
+
+      ordersSheetData.forEach((row, index)=> {
+        if (row[headerIndex] === id.id) {
+          const keys = Object.keys(body);
+          if (keys.length === 1) {
+            const keyIndex = ordersSheetData[0].indexOf(keys[0]);
+            currentState = row[keyIndex];
+            rowNumber = index + 1;
+          }
+        }
+      });
+
+      if (currentState !== body.ESTADO) {
+        const newState = {
+          values: [[body.ESTADO]]
+        }
+        const cellRange = getCell('ESTADO', rowNumber);
+        const response = await sheetsApi.spreadsheets.values.update({
+          spreadsheetId: spreadsheetId,
+          range: cellRange,
+          valueInputOption: 'USER_ENTERED',
+          resource: newState,
+        });
+        return response;
+      }
+
+      return `El estado ya es ${currentState}`;
+
+    } catch (error) {
+      console.log('Error al actualizar estado de pedido', error);
+    }
+
+  }
+
   async getGoogleSheetsClient() {
     const auth = new google.auth.GoogleAuth({
       credentials: {
