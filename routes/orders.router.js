@@ -37,4 +37,15 @@ router.post('/', async (req, res) => {
   }
 });
 
+router.patch('/:id', async (req, res) => {
+  try {
+    const id = req.params;
+    const body = req.body;
+    const orderUpdated = await service.updateState(id, body);
+    res.json(orderUpdated);
+  } catch (error) {
+    res.status(500).json('Error al cambiar estado del pedido');
+  }
+});
+
 module.exports = router;
