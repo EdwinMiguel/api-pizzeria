@@ -160,7 +160,7 @@ class OrderService {
       } else if (header === "FECHA ENTREGA") {
         order[headerIndex] = orderData['FECHA ENTREGA'];
       } else if (header === "ESTADO") {
-        order[headerIndex] = 'pendiente';
+        order[headerIndex] = 'Pendiente';
       } else if (header === "OBSERVACIONES") {
         order[headerIndex] = orderData.OBSERVACIONES;
       }
