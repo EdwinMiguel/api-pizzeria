@@ -118,7 +118,7 @@ class OrderService {
 
     const spreadsheetId = '1VBk8B9E2uA98Zs3yEqrTl1uFqsRWNVG06LAlqIFazrs';
     const range = 'CANTIDAD PEDIDOS';
-    const valueInputOption = 'USER_ENTERED';
+    const valueInputOption = 'RAW';
 
     const data = await this.getData(range);
 
