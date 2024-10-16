@@ -1,5 +1,4 @@
 const { google } = require('googleapis');
-const { generateUniqueId } = require('../utils/generateUniqueId')
 
 class OrderService {
   constructor () {
@@ -115,19 +114,14 @@ class OrderService {
 
   async appendOrder(orderData) {
     const sheetsApi = await this.getGoogleSheetsClient();
-
     const spreadsheetId = '1VBk8B9E2uA98Zs3yEqrTl1uFqsRWNVG06LAlqIFazrs';
     const range = 'CANTIDAD PEDIDOS';
     const valueInputOption = 'RAW';
 
     const data = await this.getData(range);
 
-    const orderId = await generateUniqueId();
-
-
     const order = [];
     const options = data.data.values[0].map(header => header.trim());
-    console.log(options);
 
     const date = () => {
       const now = new Date();
@@ -154,7 +148,7 @@ class OrderService {
       if (header === "Marca temporal") {
         order[headerIndex] = date();
       } else if (header === "ID PEDIDO") {
-        order[headerIndex] = orderId;
+        order[headerIndex] = (data.data.values.length - 1) + 1;
       } else if (header === "SEDE") {
         order[headerIndex] = orderData.SEDE;
       } else if (header === "FECHA ENTREGA") {
