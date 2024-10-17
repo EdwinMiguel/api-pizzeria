@@ -181,7 +181,7 @@ class OrderService {
 
     orderPricesHeaders.forEach((header, headerIndex) => {
       if (header === "ID PEDIDO") {
-        orderPrices[headerIndex] = orderId;
+        orderPrices[headerIndex] = (data.data.values.length - 1) + 1;
       } else if (header === 'VALOR NETO') {
         orderPrices[headerIndex] = orderData.orderPrice;
       } else if (header === 'VALOR CON SERVICIO') {
