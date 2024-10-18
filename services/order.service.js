@@ -245,7 +245,6 @@ class OrderService {
       const sheetsApi = await this.getGoogleSheetsClient();
       const spreadsheetId = '1VBk8B9E2uA98Zs3yEqrTl1uFqsRWNVG06LAlqIFazrs';
       const sheetName = "CANTIDAD PEDIDOS";
-      console.log(id, body);
 
       const ordersSheet = await sheetsApi.spreadsheets.values.get({
         spreadsheetId: spreadsheetId,
@@ -287,6 +286,73 @@ class OrderService {
           valueInputOption: 'USER_ENTERED',
           resource: newState,
         });
+
+        if (response.status === 200 && body.ESTADO === 'Entregado') {
+          const updatedData = await sheetsApi.spreadsheets.values.get({
+            spreadsheetId: spreadsheetId,
+            range: sheetName,
+          });
+
+          const orderData = updatedData.data.values.find(row => row[1] === id.id);
+          const orderWithHeaders = headers.map((header, headerIndex) => {
+            if (orderData[headerIndex]) {
+              return [orderData[headerIndex], header];
+            }
+          }).filter(item => item !== undefined);
+          console.log(orderWithHeaders);
+
+          const productSheet = 'PRODUCTO';
+          const getProductsData = await sheetsApi.spreadsheets.values.get({
+            spreadsheetId: spreadsheetId,
+            range: productSheet,
+          });
+
+          const productHeaders = getProductsData.data.values[0];
+
+          const productsRows = [];
+          getProductsData.data.values.forEach(row => {
+            const valuestrim = row.map(value => value.trim());
+
+            orderWithHeaders.forEach(product => {
+              if (valuestrim.includes(product[1])) {
+                productsRows.push(valuestrim);
+              }
+            });
+          });
+
+          async function updateCell(rangeCell, resourceCell) {
+            const response = await sheetsApi.spreadsheets.values.update({
+              spreadsheetId: spreadsheetId,
+              range: rangeCell,
+              valueInputOption: 'USER_ENTERED',
+              resource: resourceCell,
+            });
+            return response;
+          }
+
+          orderWithHeaders.forEach(array => {
+            const orderDataTrim = array.map(product => product.trim());
+
+            getProductsData.data.values.forEach((row, productsRowIndex)=> {
+              const valuestrim = row.map(value => value.trim());
+              if (valuestrim.includes(orderDataTrim[1])) {
+                const newStock = {
+                  values: []
+                };
+
+                const columnIndex = productHeaders.indexOf('stock');
+                const columnLetter = String.fromCharCode(65 + columnIndex);
+                const cell = `${productSheet}!${columnLetter}${productsRowIndex + 1}`;
+
+                const calculateNewStock = parseInt(row[columnIndex]) - parseInt(orderDataTrim[0]);
+                newStock.values.push([calculateNewStock]);
+                updateCell(cell, newStock);
+              }
+            })
+          });
+
+        }
+
         return response;
       }
 
