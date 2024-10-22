@@ -299,7 +299,6 @@ class OrderService {
               return [orderData[headerIndex], header];
             }
           }).filter(item => item !== undefined);
-          console.log(orderWithHeaders);
 
           const productSheet = 'PRODUCTO';
           const getProductsData = await sheetsApi.spreadsheets.values.get({
@@ -321,14 +320,19 @@ class OrderService {
           });
 
           async function updateCell(rangeCell, resourceCell) {
-            const response = await sheetsApi.spreadsheets.values.update({
-              spreadsheetId: spreadsheetId,
-              range: rangeCell,
-              valueInputOption: 'USER_ENTERED',
-              resource: resourceCell,
-            });
-            return response;
+            try {
+              const response = await sheetsApi.spreadsheets.values.update({
+                spreadsheetId: spreadsheetId,
+                range: rangeCell,
+                valueInputOption: 'USER_ENTERED',
+                resource: resourceCell,
+              });
+              return response;
+            } catch (error) {
+              console.log(`Error actualizando la celda ${rangeCell}`, error);
+            }
           }
+          const updatePromises = [];
 
           orderWithHeaders.forEach(array => {
             const orderDataTrim = array.map(product => product.trim());
@@ -346,11 +350,12 @@ class OrderService {
 
                 const calculateNewStock = parseInt(row[columnIndex]) - parseInt(orderDataTrim[0]);
                 newStock.values.push([calculateNewStock]);
-                updateCell(cell, newStock);
+                updatePromises.push(updateCell(cell, newStock));
               }
-            })
+            });
           });
 
+          await Promise.all(updatePromises);
         }
 
         return response;
