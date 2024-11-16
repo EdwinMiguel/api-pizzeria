@@ -127,7 +127,7 @@ class ProductService {
         productData.name = product[1];
         productData.description = product[2];
         productData.measurementUnit = product[3];
-        productData.price = product[4];
+        productData.price = parseInt(product[4]);
 
         categorySheetRows.forEach(category => {
           if (category[0] === product[5]) {
@@ -148,9 +148,28 @@ class ProductService {
 
         productData.inventoryRegistrations = [];
         inventorySheetRows.shift()
+        productData.stock = 0;
+        let stock = 0;
         inventorySheetRows.forEach(registration => {
           if (registration[1] === product[0]) {
-            productData.inventoryRegistrations.push(registration);
+            productData.inventoryRegistrations.push({
+              idInvetory: registration[0],
+             idProduct: registration[1],
+             quantity: parseInt(registration[2]),
+             transaction: registration[3],
+             date: registration[4],
+             idOrder: registration[5],
+             notes: registration[6]
+            });
+
+            if (registration[3] === "ingreso") {
+              stock =+ parseInt(registration[2]);
+            } else if (registration[3] === "salida") {
+              stock =- parseInt(registration[2]);
+            }
+            productData.stock = productData.stock + stock;
+            productData.basePrice = parseInt(productData.stock) * product[4];
+            productData.finalPrice = ((15 * parseInt(productData.basePrice)) / 100) + productData.basePrice;
           }
         });
 
@@ -167,6 +186,9 @@ class ProductService {
       //   measurementUnit: "lata",
       //   price: 5500,
       //   category: "Pescados y Mariscos",
+      //   stock: 21,
+      //   "basePrice": 302500,
+      //  "finalPrice": 347875,
       //   quantities: [
       //     [1, 2, 3, 4, 5, 6]
       //   inventoryRegistrations: [
@@ -183,7 +205,7 @@ class ProductService {
       // }
 
     } catch (error) {
-
+      console.log(error);
     }
 
 
