@@ -5,7 +5,20 @@ const service = new ProductService;
 const router = express.Router()
 
 router.get('/', async (req, res) => {
-  res.json({ message: 'Lista de órdenes en versión 2' });
+  try {
+    const products = await service.find();
+    if (products) {
+      res.status(200).json(products);
+    } else {
+      res.status(500).json({
+        success: false,
+        message: 'Ocurrió un error encontrar los productos.',
+      });
+    }
+
+  } catch (error) {
+    console.log(error);
+  }
 });
 
 router.post('/', async (req, res) => {
