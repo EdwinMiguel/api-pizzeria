@@ -167,7 +167,7 @@ class OrdersService {
     try {
       const sheetsApi = await getGoogleSheetsClient();
       const spreadsheetId = '1VBk8B9E2uA98Zs3yEqrTl1uFqsRWNVG06LAlqIFazrs';
-      const ranges = ["pedido", "pedidoDetalle", "product"];
+      const ranges = ["pedido", "pedidoDetalle", "product", "user"];
 
       const response = await sheetsApi.spreadsheets.values.batchGet({
         spreadsheetId: spreadsheetId,
@@ -178,14 +178,17 @@ class OrdersService {
       const ordersSheetRows = response.data.valueRanges[0].values;
       const ordersDetailsSheetRows = response.data.valueRanges[1].values;
       const productSheetRows = response.data.valueRanges[2].values;
+      const userSheetRows = response.data.valueRanges[3].values;
 
       ordersSheetRows.shift();
       ordersSheetRows.forEach(order => {
         const orderFinded = {
           products: []
         }
+
         orderFinded.idOrder = order[0];
-        orderFinded.idUser = order[1];
+        const user = userSheetRows.find(user => user[0] === order[1]);
+        orderFinded.user = user[1];
         orderFinded.orderDate = order[2];
         orderFinded.deliveryDate = order[3];
         orderFinded.status = order[4];
@@ -193,6 +196,7 @@ class OrdersService {
         orderFinded.netCost = order[6];
         orderFinded.surcharge = order[7];
         orderFinded.surchargedPrice = order[8];
+
 
         const orderDetailsFinded = ordersDetailsSheetRows.filter(row => row[1] === order[0]);
         const orderDetailsToObject = orderDetailsFinded.map(orderDetailsRow => {
