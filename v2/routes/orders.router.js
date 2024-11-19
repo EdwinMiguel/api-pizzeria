@@ -5,7 +5,20 @@ const service = new OrdersService;
 const router = express.Router();
 
 router.get('/', async (req, res) => {
-  res.json({message: "endpoint de pedidos."});
+  try {
+    const orders = await service.find();
+    if (orders) {
+      res.status(200).json(orders);
+    } else {
+      res.status(500).json({
+        success: false,
+        message: 'Ocurrió un error encontrar los pedidos.',
+      });
+    }
+
+  } catch (error) {
+    console.log(error);
+  }
 });
 
 router.post('/', async (req, res) => {

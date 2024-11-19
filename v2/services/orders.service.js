@@ -162,6 +162,79 @@ class OrdersService {
     }
 
   }
+
+  async find () {
+    try {
+      const sheetsApi = await getGoogleSheetsClient();
+      const spreadsheetId = '1VBk8B9E2uA98Zs3yEqrTl1uFqsRWNVG06LAlqIFazrs';
+      const ranges = ["pedido", "pedidoDetalle", "product"];
+
+      const response = await sheetsApi.spreadsheets.values.batchGet({
+        spreadsheetId: spreadsheetId,
+        ranges: ranges,
+      });
+      const ordersList = [];
+
+      const ordersSheetRows = response.data.valueRanges[0].values;
+      const ordersDetailsSheetRows = response.data.valueRanges[1].values;
+      const productSheetRows = response.data.valueRanges[2].values;
+
+      ordersSheetRows.shift();
+      ordersSheetRows.forEach(order => {
+        const orderFinded = {
+          products: []
+        }
+        orderFinded.idOrder = order[0];
+        orderFinded.idUser = order[1];
+        orderFinded.orderDate = order[2];
+        orderFinded.deliveryDate = order[3];
+        orderFinded.status = order[4];
+        orderFinded.orderNotes = order[5];
+        orderFinded.netCost = order[6];
+        orderFinded.surcharge = order[7];
+        orderFinded.surchargedPrice = order[8];
+
+        const orderDetailsFinded = ordersDetailsSheetRows.filter(row => row[1] === order[0]);
+        const orderDetailsToObject = orderDetailsFinded.map(orderDetailsRow => {
+          const productFinded = productSheetRows.find(product => product[0] === orderDetailsRow[2]);
+          return {
+            name: productFinded[1],
+            quantity: parseInt(orderDetailsRow[3]),
+            unitPrice: parseInt(orderDetailsRow[4]),
+            totalPrice: parseInt(orderDetailsRow[5]),
+          }
+        });
+
+        orderFinded.products = orderDetailsToObject;
+        ordersList.push(orderFinded);
+      });
+      this.products = ordersList;
+      return this.products;
+      // {
+      //   idOrder: '1',
+      //   idUser: '1',
+      //   orderDate: '2024-11-19 00:04',
+      //   deliveryDate:  '2024-11-22',
+      //   status: 'pendiente',
+      //   orderNotes: 'Prueba',
+      //   netCost: 187100,
+      //   surcharge: 28065,
+      //   surchargedPrice: 215165,
+      //   products: [
+      //     {
+      //       name: 'nombre del producto',
+      //       quantity: 3,
+      //       unitPrice: 5500,
+      //       totalPrice: 16500
+      //     },
+      //   ]
+      // }
+    } catch (error) {
+      console.log(error);
+    }
+
+
+  }
 }
 
 module.exports = OrdersService;
