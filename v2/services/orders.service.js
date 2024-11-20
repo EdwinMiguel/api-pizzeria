@@ -202,6 +202,7 @@ class OrdersService {
         const orderDetailsToObject = orderDetailsFinded.map(orderDetailsRow => {
           const productFinded = productSheetRows.find(product => product[0] === orderDetailsRow[2]);
           return {
+            idProduct: productFinded[0],
             name: productFinded[1],
             quantity: parseInt(orderDetailsRow[3]),
             unitPrice: parseInt(orderDetailsRow[4]),
