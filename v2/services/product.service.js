@@ -120,6 +120,8 @@ class ProductService {
       const inventorySheetRows = response.data.valueRanges[3].values;
 
       productSheetRows.shift()
+      productQuantitiesSheetRows.shift()
+      inventorySheetRows.shift()
 
       productSheetRows.forEach(product => {
         const productData = {};
@@ -138,7 +140,7 @@ class ProductService {
           }
         });
 
-        productQuantitiesSheetRows.shift()
+
         productData.quantities = [];
         productQuantitiesSheetRows.forEach(quantity => {
           if (quantity[0] === product[0]) {
@@ -147,27 +149,28 @@ class ProductService {
         });
 
         productData.inventoryRegistrations = [];
-        inventorySheetRows.shift()
+
         productData.stock = 0;
         let stock = 0;
         inventorySheetRows.forEach(registration => {
           if (registration[1] === product[0]) {
+            console.log("registration", registration[1], product[0]);
             productData.inventoryRegistrations.push({
               idInvetory: registration[0],
              idProduct: registration[1],
              quantity: parseInt(registration[2]),
              transaction: registration[3],
              date: registration[4],
-             idOrder: registration[5],
-             notes: registration[6]
+             idOrder: registration[5] || null,
+             notes: registration[6] || ''
             });
 
             if (registration[3] === "ingreso") {
-              stock =+ parseInt(registration[2]);
+              stock += parseInt(registration[2]);
             } else if (registration[3] === "salida") {
-              stock =- parseInt(registration[2]);
+              stock -= parseInt(registration[2]);
             }
-            productData.stock = productData.stock + stock;
+            productData.stock = stock;
             productData.basePrice = parseInt(productData.stock) * product[4];
             productData.finalPrice = ((15 * parseInt(productData.basePrice)) / 100) + productData.basePrice;
           }
