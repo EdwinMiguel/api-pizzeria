@@ -38,4 +38,22 @@ router.post('/', async (req, res) => {
   }
 });
 
+router.patch('/:id', async (req, res) => {
+  try {
+    const id = req.params;
+    const body = req.body;
+    const updated = await service.update(id, body);
+    if (updated && updated.success) {
+      res.status(200).json(updated);
+    } else {
+      res.status(500).json({
+        success: false,
+        message: 'Ocurrió un error al procesar el pedido.',
+      });
+    }
+  } catch (error) {
+    console.log(error);
+  }
+})
+
 module.exports = router;

@@ -194,8 +194,16 @@ class OrdersService {
         orderFinded.status = order[4];
         orderFinded.orderNotes = order[5];
         orderFinded.netCost = order[6];
-        orderFinded.surcharge = order[7];
-        orderFinded.surchargedPrice = order[8];
+        if (order[7].includes(",")) {
+          orderFinded.surcharge = order[7].replace(',', '.');
+        } else if (!order[7].includes(",")) {
+          orderFinded.surcharge = order[7];
+        }
+        if (order[8].includes(",")) {
+          orderFinded.surchargedPrice = order[8].replace(',', '.');
+        }else if (!order[8].includes(",")) {
+          orderFinded.surchargedPrice = order[8];
+        }
 
 
         const orderDetailsFinded = ordersDetailsSheetRows.filter(row => row[1] === order[0]);
@@ -238,6 +246,204 @@ class OrdersService {
       console.log(error);
     }
 
+
+  }
+
+  async update(id, orderChanges) {
+    console.log(id, orderChanges);
+    try {
+      const sheetsApi = await getGoogleSheetsClient();
+      const spreadsheetId = '1VBk8B9E2uA98Zs3yEqrTl1uFqsRWNVG06LAlqIFazrs';
+      const ranges = ["pedido", "pedidoDetalle", "product"];
+
+      const response = await sheetsApi.spreadsheets.values.batchGet({
+        spreadsheetId: spreadsheetId,
+        ranges: ranges,
+      });
+
+      const ordersSheetRows = response.data.valueRanges[0].values;
+      const ordersDetailsSheetRows = response.data.valueRanges[1].values;
+      const productSheetRows = response.data.valueRanges[2].values;
+
+
+      if (orderChanges.deletedProducts.length > 0) {
+        const productsToDelete = [...orderChanges.deletedProducts]
+        const orderDetailsRegistrations = [];
+        productsToDelete.forEach(product => {
+          ordersDetailsSheetRows.forEach((row, rowIndex)=> {
+            if (row[1] === id.id && row[2] === product.idProduct) {
+              console.log(row);
+              row[1] = "deleted"
+              row[5] = "deleted"
+              orderDetailsRegistrations.push(
+              {
+                updateCells: {
+                    range: {
+                        sheetId: 1301384339, // Cambia este valor al ID de tu hoja (puedes obtenerlo con `spreadsheets.get`)
+                        startRowIndex: rowIndex,
+                        endRowIndex: rowIndex + 1,
+                        startColumnIndex: 0, // Primera columna
+                        endColumnIndex: 6, // Última columna (exclusiva)
+                    },
+                    rows: [
+                        {
+                            values: [
+                                { userEnteredValue: { stringValue: row[0] } },
+                                { userEnteredValue: { stringValue: row[1] } },
+                                { userEnteredValue: { stringValue: row[2] } },
+                                { userEnteredValue: { stringValue: row[3] } },
+                                { userEnteredValue: { stringValue: row[4] } },
+                                { userEnteredValue: { stringValue: row[5] } },
+                            ],
+                        },
+                    ],
+                    fields: "*",
+                },
+            });
+            }
+          });
+        })
+
+        const orderDetailsResponse = await sheetsApi.spreadsheets.batchUpdate({
+          spreadsheetId,
+          resource: { requests: orderDetailsRegistrations },
+        });
+        }
+
+        if (orderChanges.productsToUpdate.length > 0) {
+
+          const range = 'pedidoDetalle!A:F'
+          const orderDetailSheet = await sheetsApi.spreadsheets.values.get({
+            // ID del libro
+            spreadsheetId: spreadsheetId,
+            // ID de la hoja
+            range: range
+          });
+
+
+          const updatedRows = []
+          // const request = {
+          //   updateCells: {
+          //       range: {
+          //           sheetId: 1301384339, // Cambia este valor al ID de tu hoja (puedes obtenerlo con `spreadsheets.get`)
+          //           startRowIndex: rowIndex,
+          //           endRowIndex: rowIndex + 1,
+          //           startColumnIndex: 0, // Primera columna
+          //           endColumnIndex: 6, // Última columna (exclusiva)
+          //       },
+          //       rows: [
+          //           {
+          //               values: [
+          //                   { userEnteredValue: { numberValue: row[0] } },
+          //                   { userEnteredValue: { numberValue: row[1] } },
+          //                   { userEnteredValue: { numberValue: row[2] } },
+          //                   { userEnteredValue: { numberValue: element.quantity } },
+          //                   { userEnteredValue: { numberValue: element.unitPrice } },
+          //                   { userEnteredValue: { numberValue: finalCost } },
+          //               ],
+          //           },
+          //       ],
+          //       fields: "*",
+          //   },
+          // }
+
+          const data = orderDetailSheet.data.values;
+
+          data.forEach((row, rowIndex)=> {
+            if (row[1] === id.id) {
+              orderChanges.productsToUpdate.forEach(element => {
+                if (element.idProduct === row[2]) {
+                  const totalNetCost = element.unitPrice * element.quantity;
+                  const surcharge = (totalNetCost * 15) / 100;
+                  const finalCost = surcharge + totalNetCost;
+                  const request = {
+                    updateCells: {
+                        range: {
+                            sheetId: 1301384339, // Cambia este valor al ID de tu hoja (puedes obtenerlo con `spreadsheets.get`)
+                            startRowIndex: rowIndex,
+                            endRowIndex: rowIndex + 1,
+                            startColumnIndex: 0, // Primera columna
+                            endColumnIndex: 6, // Última columna (exclusiva)
+                        },
+                        rows: [
+                            {
+                                values: [
+                                    { userEnteredValue: { stringValue: row[0] } },
+                                    { userEnteredValue: { stringValue: row[1] } },
+                                    { userEnteredValue: { stringValue: row[2] } },
+                                    { userEnteredValue: { numberValue: element.quantity } },
+                                    { userEnteredValue: { numberValue: element.unitPrice } },
+                                    { userEnteredValue: { numberValue: finalCost } },
+                                ],
+                            },
+                        ],
+                        fields: "*",
+                    },
+                  }
+                  updatedRows.push(request);
+                }
+              })
+            }
+          });
+
+          const response = await sheetsApi.spreadsheets.batchUpdate({
+            spreadsheetId,
+            resource: { requests: updatedRows },
+          });
+
+        }
+        const orderDetailsRange = 'pedidoDetalle!A:F'
+        const orderDetailSheetUpdated = await sheetsApi.spreadsheets.values.get({
+          // ID del libro
+          spreadsheetId: spreadsheetId,
+          // ID de la hoja
+          range: orderDetailsRange
+        });
+        let rowToUpdate;
+        let orderToUpdate;
+        ordersSheetRows.forEach((row, index) => {
+          if (row[0] === id.id) {
+            rowToUpdate = `pedido!A${index + 1}:I${index + 1}`;
+            let productsNetCosts = 0;
+
+            const orderDetails = orderDetailSheetUpdated.data.values.filter(element => {
+              if (element[1] === row[0]) {
+                return element;
+              }
+            });
+            orderDetails.forEach(element => {
+              const calculateNetCost = parseInt(element[3]) * parseInt(element[4]);
+              productsNetCosts += calculateNetCost;
+            })
+
+            const surcharge = (productsNetCosts * 15) / 100;
+            const finalCost = surcharge + productsNetCosts;
+
+            orderToUpdate = [row[0], row[1], row[2], row[3], row[4], row[5], productsNetCosts, surcharge ,finalCost];
+          }
+        });
+
+        const orderSheetResponse = await sheetsApi.spreadsheets.values.update({
+          spreadsheetId: spreadsheetId,
+          range: rowToUpdate, // Ejemplo: 'Hoja1!A5:F5'
+          valueInputOption: 'USER_ENTERED', // Puede ser 'RAW' o 'USER_ENTERED'
+          requestBody: {
+              values: [orderToUpdate], // Los datos que reemplazarán la fila
+          },
+        });
+
+        const orderUpdated = JSON.parse(orderSheetResponse.config.body).values[0];
+        console.log(orderUpdated);
+        if (orderSheetResponse.statusText === "OK") {
+          return {
+            success: true,
+            message: 'Datos actualizados correctamente.',
+            idOrder: orderUpdated[0],
+          }
+        }
+    } catch (error) {
+      console.log(error);
+    }
 
   }
 }
