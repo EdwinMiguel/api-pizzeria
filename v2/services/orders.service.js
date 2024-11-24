@@ -446,6 +446,106 @@ class OrdersService {
     }
 
   }
+
+  async updateStatus(id, status) {
+    try {
+      const sheetsApi = await getGoogleSheetsClient();
+      const spreadsheetId = '1VBk8B9E2uA98Zs3yEqrTl1uFqsRWNVG06LAlqIFazrs';
+      const ranges = ["pedido", "pedidoDetalle", "product", "inventory!A:G"];
+
+      const response = await sheetsApi.spreadsheets.values.batchGet({
+        spreadsheetId: spreadsheetId,
+        ranges: ranges,
+      });
+
+      const ordersSheetRows = response.data.valueRanges[0].values;
+      const ordersDetailsSheetRows = response.data.valueRanges[1].values;
+      const inventorySheetRows = response.data.valueRanges[3].values;
+      const date = () => {
+        const now = new Date();
+        // Convertir a hora de Colombia (UTC-5)
+        const colombiaTime = new Date(now.getTime() - (5 * 60 * 60 * 1000));
+
+        // Formatear la fecha y hora
+        const year = colombiaTime.getUTCFullYear();
+        const month = String(colombiaTime.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(colombiaTime.getUTCDate()).padStart(2, '0');
+        const hours = String(colombiaTime.getUTCHours()).padStart(2, '0');
+        const minutes = String(colombiaTime.getUTCMinutes()).padStart(2, '0');
+
+        // Crear string formateado
+        const timestamp = `${year}-${month}-${day} ${hours}:${minutes}`;
+
+        return timestamp;
+      }
+
+      if (status === 'entregado') {
+        const order = ordersSheetRows.filter(order => order[0] === id);
+
+
+        const orderDetails = ordersDetailsSheetRows.filter(row => row[1] === id);
+
+        let inventoryNextId = inventorySheetRows.length === 1 ? 1 : (inventorySheetRows.length - 1) + 1;
+
+        const productsShipped = [];
+        const shippedProductsData = {
+          range: ranges[3],
+          values: productsShipped,
+        };
+        orderDetails.forEach(element => {
+          if (productsShipped.length === 0) {
+            productsShipped.push([inventoryNextId, element[2], element[3], 'salida', date(), element[1], '']);
+          } else if (productsShipped.length > 0) {
+            inventoryNextId += 1;
+            productsShipped.push([inventoryNextId, element[2], element[3], 'salida', date(), element[1], '']);
+          }
+        });
+
+        const savedRegistrations = await sheetsApi.spreadsheets.values.append({
+          spreadsheetId: spreadsheetId,
+          range: shippedProductsData.range,
+          valueInputOption: 'RAW',
+          insertDataOption: 'INSERT_ROWS',
+          requestBody: {
+            values: shippedProductsData.values,
+          },
+        });
+
+        if (savedRegistrations.statusText === "OK") {
+          const orderChangesData = {
+          }
+
+          const orderIndex = ordersSheetRows.findIndex(element => element[0] === id);
+
+          orderChangesData.range = `pedido!E${orderIndex + 1}`;
+          orderChangesData.values = [['entregado']];
+          console.log(orderChangesData);
+
+          const updatedOrderStatus = await sheetsApi.spreadsheets.values.update({
+            spreadsheetId: spreadsheetId,
+            range: orderChangesData.range,
+            valueInputOption: 'RAW',
+            requestBody: {
+              values: orderChangesData.values,
+            },
+          });
+
+          if (updatedOrderStatus.statusText === "OK") {
+            const orderUpdated = JSON.parse(updatedOrderStatus.config.body).values[0];
+            return {
+              success: true,
+              message: 'Datos actualizados correctamente.',
+              status: orderUpdated[0],
+              idOrder: id
+            }
+          }
+        }
+      }
+
+    } catch (error) {
+
+    }
+  }
 }
 
 module.exports = OrdersService;
