@@ -38,6 +38,31 @@ router.post('/', async (req, res) => {
   }
 });
 
+
+router.patch('/:id/status', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const updated = await service.updateStatus(id, status);
+
+    if (updated && updated.success) {
+      res.status(200).json(updated);
+    } else {
+      res.status(500).json({
+        success: false,
+        message: 'Ocurrió un error al actualizar el estado del pedido.',
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor',
+    });
+  }
+});
+
 router.patch('/:id', async (req, res) => {
   try {
     const id = req.params;
@@ -54,6 +79,6 @@ router.patch('/:id', async (req, res) => {
   } catch (error) {
     console.log(error);
   }
-})
+});
 
 module.exports = router;
