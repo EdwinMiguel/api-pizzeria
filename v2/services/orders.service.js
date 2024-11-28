@@ -15,8 +15,7 @@ class OrdersService {
     try {
       const sheetsApi = await getGoogleSheetsClient();
       const spreadsheetId = '1VBk8B9E2uA98Zs3yEqrTl1uFqsRWNVG06LAlqIFazrs';
-      const ranges = ["pedido", "pedidoDetalle", "clientes", "product"];
-
+      const ranges = ["pedido", "pedidoDetalle", "user", "product"];
       const sheets = await sheetsApi.spreadsheets.values.batchGet({
         spreadsheetId: spreadsheetId,
         ranges: ranges,
@@ -28,8 +27,6 @@ class OrdersService {
       const productsSheetRows = sheets.data.valueRanges[3].values;
 
       let orderNextId = orderSheetRows.length === 1 ? 1 : (orderSheetRows.length - 1) + 1;
-
-     ;
 
       customersSheetRows.shift();
       let idCustomer = customersSheetRows.find(row => row[1] === newOrderData.idUser)[0];
@@ -62,12 +59,11 @@ class OrdersService {
       let surcharge;
       let surchargedPrice = 0;
       newOrderData.products.forEach(element => {
-        const productRow = productsSheetRows.find(row => row[1] === element.name);
+        const productRow = productsSheetRows.find(row => row[1].trim() === element.name.trim());
 
         const totalPrice = parseInt(element.quantity) * parseInt(productRow[4]);
         netCost += totalPrice;
         surcharge = (netCost * 15) / 100;
-
 
         if (orderDetailsList.length === 0) {
           const orderDetails = [
@@ -94,7 +90,6 @@ class OrdersService {
       });
 
       surchargedPrice = surcharge + netCost;
-
       const newOrder = {
         range: ranges[0],
         values: [[
@@ -137,7 +132,6 @@ class OrdersService {
       }
 
       const orderSheetResponse = JSON.parse(orderResponse.config.body).values[0];
-
       return {
         success: true,
         message: 'Datos guardados correctamente',
