@@ -244,7 +244,6 @@ class OrdersService {
   }
 
   async update(id, orderChanges) {
-    console.log(id, orderChanges);
     try {
       const sheetsApi = await getGoogleSheetsClient();
       const spreadsheetId = '1VBk8B9E2uA98Zs3yEqrTl1uFqsRWNVG06LAlqIFazrs';
@@ -266,7 +265,6 @@ class OrdersService {
         productsToDelete.forEach(product => {
           ordersDetailsSheetRows.forEach((row, rowIndex)=> {
             if (row[1] === id.id && row[2] === product.idProduct) {
-              console.log(row);
               row[1] = "deleted"
               row[5] = "deleted"
               orderDetailsRegistrations.push(
@@ -367,7 +365,7 @@ class OrdersService {
                                     { userEnteredValue: { stringValue: row[2] } },
                                     { userEnteredValue: { numberValue: element.quantity } },
                                     { userEnteredValue: { numberValue: element.unitPrice } },
-                                    { userEnteredValue: { numberValue: finalCost } },
+                                    { userEnteredValue: { numberValue: totalNetCost } },
                                 ],
                             },
                         ],
