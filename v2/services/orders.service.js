@@ -301,7 +301,7 @@ class OrdersService {
           resource: { requests: orderDetailsRegistrations },
         });
         }
-
+        let orderDetailsSheetResponse;
         if (orderChanges.productsToUpdate.length > 0) {
 
           const range = 'pedidoDetalle!A:F'
@@ -314,31 +314,6 @@ class OrdersService {
 
 
           const updatedRows = []
-          // const request = {
-          //   updateCells: {
-          //       range: {
-          //           sheetId: 1301384339, // Cambia este valor al ID de tu hoja (puedes obtenerlo con `spreadsheets.get`)
-          //           startRowIndex: rowIndex,
-          //           endRowIndex: rowIndex + 1,
-          //           startColumnIndex: 0, // Primera columna
-          //           endColumnIndex: 6, // Última columna (exclusiva)
-          //       },
-          //       rows: [
-          //           {
-          //               values: [
-          //                   { userEnteredValue: { numberValue: row[0] } },
-          //                   { userEnteredValue: { numberValue: row[1] } },
-          //                   { userEnteredValue: { numberValue: row[2] } },
-          //                   { userEnteredValue: { numberValue: element.quantity } },
-          //                   { userEnteredValue: { numberValue: element.unitPrice } },
-          //                   { userEnteredValue: { numberValue: finalCost } },
-          //               ],
-          //           },
-          //       ],
-          //       fields: "*",
-          //   },
-          // }
-
           const data = orderDetailSheet.data.values;
 
           data.forEach((row, rowIndex)=> {
@@ -378,7 +353,7 @@ class OrdersService {
             }
           });
 
-          const response = await sheetsApi.spreadsheets.batchUpdate({
+          orderDetailsSheetResponse = await sheetsApi.spreadsheets.batchUpdate({
             spreadsheetId,
             resource: { requests: updatedRows },
           });
@@ -422,15 +397,16 @@ class OrdersService {
           requestBody: {
               values: [orderToUpdate], // Los datos que reemplazarán la fila
           },
-        });
+        });orderDetailsSheetResponse
 
         const orderUpdated = JSON.parse(orderSheetResponse.config.body).values[0];
-        console.log(orderUpdated);
         if (orderSheetResponse.statusText === "OK") {
           return {
             success: true,
             message: 'Datos actualizados correctamente.',
             idOrder: orderUpdated[0],
+            updatedProducts: orderChanges.productsToUpdate,
+            deletedProducts: orderChanges.deletedProducts || null
           }
         }
     } catch (error) {
