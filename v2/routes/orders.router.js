@@ -44,6 +44,15 @@ router.patch('/:id/status', async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
 
+    if (status === "pendiente") {
+      return {
+        success: false,
+        message: 'Este pedido ya ha sido entregado.',
+        status: "entregado",
+        idOrder: id
+      }
+    }
+
     const updated = await service.updateStatus(id, status);
 
     if (updated && updated.success) {
