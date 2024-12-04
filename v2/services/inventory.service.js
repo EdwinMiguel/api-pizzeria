@@ -6,6 +6,7 @@ class InventoryService {
   }
   // idInventory	idProduct	quantity	transaction	date	idOrder	notes
   async create (data) {
+    console.log(data);
     try {
       const sheetsApi = await getGoogleSheetsClient();
       const spreadsheetId = '1VBk8B9E2uA98Zs3yEqrTl1uFqsRWNVG06LAlqIFazrs';
@@ -44,7 +45,7 @@ class InventoryService {
 
       const registration = {
         values: [
-          [nextInventoryId, product[0], data.quantity,"ingreso", date(), null, data.notes]
+          [nextInventoryId, product[0], data.quantity,"ingreso", date(), null, data.notes || null, data.totalCost, data.unitPrice, data.idSupplier]
         ]
       }
 
