@@ -2,7 +2,7 @@ const { getGoogleSheetsClient } = require('../../utils/getGoogleSheetsClient');
 
 class InventoryService {
   constructor() {
-
+    this.registrations = [];
   }
   // idInventory	idProduct	quantity	transaction	date	idOrder	notes
   async create (data) {
@@ -76,6 +76,112 @@ class InventoryService {
       }
 
     }
+
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async find () {
+    // Objeto de las transacciones que son de ingreso:
+      // {
+      //   id: 1,
+      //   transaction: "ingreso",
+      //   date: "2024-11-17 15:54",
+      //   notes: "Actualización 17 noviembre",
+      //   product: {
+      //     id: 1,
+      //     name: "ATÚN",
+      //     quantity: 19,
+      //     totalCost: 234234,
+      //     unitPrice: 5500,
+      //   },
+      //   supplier: {
+      //     id: 3,
+      //     name: "Praismar",
+      //   }
+      // }
+
+      // Objeto de las transacciones que son de salida:
+      // {
+      //   id: 1,
+      //   transaction: "salida",
+      //   date: "2024-11-17 15:54",
+      //   notes: "",
+      //   product: {
+      //     id: 1,
+      //     quantity: 19,
+      //     totalCost: 234234,
+      //     unitPrice: 5500,
+      //   },
+      //   supplier: {
+      //     id: null,
+      //     name: null,
+      //   }
+      // }
+    try {
+      const sheetsApi = await getGoogleSheetsClient();
+      const spreadsheetId = '1VBk8B9E2uA98Zs3yEqrTl1uFqsRWNVG06LAlqIFazrs';
+      const ranges = ["inventory","product", "proveedor"];
+
+      const getSheets = await sheetsApi.spreadsheets.values.batchGet({
+        spreadsheetId: spreadsheetId,
+        ranges: ranges,
+      });
+
+      const inventorySheetData = getSheets.data.valueRanges[0].values;
+      const productSheetData = getSheets.data.valueRanges[1].values;
+      const proveedorSheetData = getSheets.data.valueRanges[2].values;
+
+      const registrationsList = [];
+      inventorySheetData.shift()
+      inventorySheetData.forEach(row => {
+        let registration
+        const productData = productSheetData.find(productRow => productRow[0].toLowerCase().trim() === row[1].toLowerCase().trim());
+        const supplierData = proveedorSheetData.find(supplierRow => supplierRow[0] === row[9]);
+        if (row[3].toLowerCase().trim() === "salida") {
+          registration = {
+            id: parseInt(row[0]),
+            transaction: row[3],
+            date: row[4],
+            notes: row[6] || null,
+            product: {
+              id: parseInt(row[1]),
+              name: productData[1],
+              quantity: parseInt(row[2]),
+              totalCost: parseInt(row[7]),
+              unitPrice: parseInt(row[8]),
+            },
+            supplier: {
+              id: null,
+              name: null
+            }
+          }
+        } else if (row[3].toLowerCase().trim() === "ingreso") {
+          registration = {
+            id: parseInt(row[0]),
+            transaction: row[3],
+            date: row[4],
+            notes: row[6] || null,
+            product: {
+              id: parseInt(row[1]),
+              name: productData[1],
+              quantity: parseInt(row[2]),
+              totalCost: parseInt(row[7]),
+              unitPrice: parseInt(row[8]),
+            },
+            supplier: {
+              id: parseInt(row[9]),
+              name: supplierData[1]
+            }
+          }
+        }
+
+        registrationsList.push(registration);
+      });
+
+      this.registrations = registrationsList;
+      return this.registrations;
 
     } catch (error) {
       console.log(error);

@@ -5,7 +5,19 @@ const service = new InventoryService;
 const router = express.Router()
 
 router.get('/', async (req, res) => {
-  res.json({message: "endpoint de inventario"});
+  try {
+    const result = await service.find();
+    if (result) {
+      res.status(200).json(result);
+    } else {
+      res.status(500).json({
+        success: false,
+        message: 'Ocurrió un error encontrar los registros.',
+      });
+    }
+  } catch (error) {
+    console.log(error);
+  }
 });
 
 router.post('/', async (req, res) => {
