@@ -6,7 +6,6 @@ class InventoryService {
   }
   // idInventory	idProduct	quantity	transaction	date	idOrder	notes
   async create (data) {
-    console.log(data);
     try {
       const sheetsApi = await getGoogleSheetsClient();
       const spreadsheetId = '1VBk8B9E2uA98Zs3yEqrTl1uFqsRWNVG06LAlqIFazrs';
@@ -45,11 +44,11 @@ class InventoryService {
 
       const registration = {
         values: [
-          [nextInventoryId, product[0], data.quantity,"ingreso", date(), null, data.notes || null, data.totalCost, data.unitPrice, data.idSupplier]
+          [nextInventoryId, product[0], data.quantity,"ingreso", date(), null, data.notes || null, data.idSupplier]
         ]
       }
 
-    const response = await sheetsApi.spreadsheets.values.append({
+    const inventoryResponse = await sheetsApi.spreadsheets.values.append({
       spreadsheetId: spreadsheetId,
       range: ranges[0],
       valueInputOption: 'RAW',
@@ -57,24 +56,68 @@ class InventoryService {
       resource: registration
     });
 
-    if (response.statusText === "OK") {
-      const inventorySheetResponse = JSON.parse(response.config.body).values[0];
+    if (inventoryResponse.statusText === "OK") {
+      const newStock = {};
+      const orderIndex = productsSheetRows.findIndex(row => row[0] === data.idProduct);
+
+      const rowsToUpdate = [];
+
+      if (product[8] === undefined) {
+        newStock.value = 0 + parseInt(data.quantity);
+        newStock.newTotal = parseInt(product[4]) * 0;
+      } else {
+        newStock.value = parseInt(product[8]) + parseInt(data.quantity);
+        newStock.newTotal = parseInt(product[4]) * newStock.value;
+      }
+
+      const startRowIndex = orderIndex + 1;
+      const endRowIndex = orderIndex + 2;
+
+      const request = { // este objeto contiene los datos necesarios para actualizar celdas con batchUpdate
+        updateCells: {
+          range: {
+            sheetId: 23587344, // Cambia este valor al ID de tu hoja (puedes obtenerlo con `spreadsheets.get`)
+            startRowIndex: startRowIndex,
+            endRowIndex: endRowIndex,
+            startColumnIndex: 8, // Primera columna
+            endColumnIndex: 10, // Última columna (exclusiva)
+          },
+          rows: [
+            {
+              values: [
+                  { userEnteredValue: { numberValue: newStock.value } },
+                  { userEnteredValue: { numberValue:  newStock.newTotal } },
+              ],
+            },
+          ],
+          fields: "*",
+        },
+      }
+
+      rowsToUpdate.push(request);
+
+      let response = await sheetsApi.spreadsheets.batchUpdate({
+        spreadsheetId,
+        resource: { requests: rowsToUpdate },
+      });
+
+      const productResponse = JSON.parse(response.config.body).requests[0].updateCells.rows[0].values;
+
       return {
         success: true,
         message: 'Stock registrado exitosamente.',
         savedData: {
-          idInventory: inventorySheetResponse[0],
-          idProduct: inventorySheetResponse[1],
-          quantity: inventorySheetResponse[2],
-          transaction: inventorySheetResponse[3],
-          date: inventorySheetResponse[4],
-          idOrder: inventorySheetResponse[5],
-          notes: inventorySheetResponse[6],
+          idInventory: registration.values[0][0],
+          idProduct: registration.values[0][1],
+          quantity: registration.values[0][2],
+          transaction: registration.values[0][3],
+          date: registration.values[0][4],
+          idOrder: registration.values[0][5],
+          notes: registration.values[0][6],
           name: product[1],
           measurementUnit: product[3],
         },
       }
-
     }
 
     } catch (error) {
@@ -93,8 +136,6 @@ class InventoryService {
       //     id: 1,
       //     name: "ATÚN",
       //     quantity: 19,
-      //     totalCost: 234234,
-      //     unitPrice: 5500,
       //   },
       //   supplier: {
       //     id: 3,
@@ -110,9 +151,8 @@ class InventoryService {
       //   notes: "",
       //   product: {
       //     id: 1,
+      //     name: "ATÚN",
       //     quantity: 19,
-      //     totalCost: 234234,
-      //     unitPrice: 5500,
       //   },
       //   supplier: {
       //     id: null,
@@ -122,7 +162,7 @@ class InventoryService {
     try {
       const sheetsApi = await getGoogleSheetsClient();
       const spreadsheetId = '1VBk8B9E2uA98Zs3yEqrTl1uFqsRWNVG06LAlqIFazrs';
-      const ranges = ["inventory","product", "proveedor"];
+      const ranges = ["inventory","product", "proveedores"];
 
       const getSheets = await sheetsApi.spreadsheets.values.batchGet({
         spreadsheetId: spreadsheetId,
@@ -132,13 +172,17 @@ class InventoryService {
       const inventorySheetData = getSheets.data.valueRanges[0].values;
       const productSheetData = getSheets.data.valueRanges[1].values;
       const proveedorSheetData = getSheets.data.valueRanges[2].values;
-
       const registrationsList = [];
+
       inventorySheetData.shift()
       inventorySheetData.forEach(row => {
-        let registration
+
+        let registration;
+
         const productData = productSheetData.find(productRow => productRow[0].toLowerCase().trim() === row[1].toLowerCase().trim());
-        const supplierData = proveedorSheetData.find(supplierRow => supplierRow[0] === row[9]);
+
+        const supplierData = proveedorSheetData.find(supplierRow => supplierRow[0] === row[7]);
+
         if (row[3].toLowerCase().trim() === "salida") {
           registration = {
             id: parseInt(row[0]),
@@ -149,14 +193,13 @@ class InventoryService {
               id: parseInt(row[1]),
               name: productData[1],
               quantity: parseInt(row[2]),
-              totalCost: parseInt(row[7]),
-              unitPrice: parseInt(row[8]),
             },
             supplier: {
               id: null,
               name: null
             }
           }
+
         } else if (row[3].toLowerCase().trim() === "ingreso") {
           registration = {
             id: parseInt(row[0]),
@@ -167,11 +210,9 @@ class InventoryService {
               id: parseInt(row[1]),
               name: productData[1],
               quantity: parseInt(row[2]),
-              totalCost: parseInt(row[7]),
-              unitPrice: parseInt(row[8]),
             },
             supplier: {
-              id: parseInt(row[9]),
+              id: parseInt(row[7]),
               name: supplierData[1]
             }
           }
