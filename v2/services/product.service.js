@@ -9,17 +9,17 @@ class ProductService {
     try {
       const sheetsApi = await getGoogleSheetsClient();
       const spreadsheetId = '1VBk8B9E2uA98Zs3yEqrTl1uFqsRWNVG06LAlqIFazrs';
-      const ranges = ["product", "productoCantidades", "categoria"];
+      const ranges = ["product", "categorias"];
 
       const response = await sheetsApi.spreadsheets.values.batchGet({
         spreadsheetId: spreadsheetId,
         ranges: ranges,
       });
-
       let productSheetRows = response.data.valueRanges[0].values;
-      let categorySheetRows = response.data.valueRanges[2].values;
+      let categorySheetRows = response.data.valueRanges[1].values;
       let categoryName;
 
+      // obtiene el nombre de la categoría del producto
       if (newProductData.idCategory) {
         categorySheetRows.forEach(element => {
           if (parseInt(element[0]) === parseInt(newProductData.idCategory)) {
@@ -32,7 +32,7 @@ class ProductService {
 
       const productSheetValuesToAppend = {
         range: ranges[0],
-        values: [[productNextId, newProductData.name, newProductData.description, newProductData.measurementUnit, parseInt(newProductData.price), parseInt(newProductData.idCategory)]],
+        values: [[productNextId, newProductData.name, newProductData.description || "", newProductData.measurementUnit, parseInt(newProductData.price), parseInt(newProductData.idCategory), newProductData.idSuppliers, newProductData.quantities || ""]],
       };
 
       const productSavedData = await sheetsApi.spreadsheets.values.append({
@@ -46,34 +46,6 @@ class ProductService {
       });
 
       if (productSavedData.statusText === "OK") {
-        let quantitiesSheetResponse;
-        if (newProductData.quantities) {
-          let rowsValues = [];
-          newProductData.quantities.forEach(element => {
-            const quantityToNumber = parseInt(element);
-
-            rowsValues.push([productNextId, quantityToNumber,newProductData.measurementUnit]);
-          });
-
-          const productQuantitiesData = {
-            range: ranges[1],
-            values: rowsValues,
-          };
-
-          const quantitiesSaved = await sheetsApi.spreadsheets.values.append({
-            spreadsheetId: spreadsheetId,
-            range: productQuantitiesData.range,
-            valueInputOption: 'RAW',
-            insertDataOption: 'INSERT_ROWS',
-            requestBody: {
-              values: productQuantitiesData.values,
-            },
-          });
-
-          if (quantitiesSaved.statusText === "OK") {
-            quantitiesSheetResponse = JSON.parse(quantitiesSaved.config.body).values.map((item) => item.slice(1));
-          }
-        }
 
         const productSheetResponse = JSON.parse(productSavedData.config.body).values[0];
 
@@ -87,7 +59,6 @@ class ProductService {
             measurementUnit: productSheetResponse[3],
             price: productSheetResponse[4],
             category: categoryName,
-            quantities:quantitiesSheetResponse
           },
         }
       }
@@ -134,7 +105,6 @@ class ProductService {
         productData.stock = product[8] || 0;
         productData.total = product[9] || 0;
 
-        console.log(productData);
         categorySheetRows.forEach(category => {
           if (category[0] === product[5]) {
             productData.category = {
@@ -151,7 +121,6 @@ class ProductService {
         let stock = 0;
         inventorySheetRows.forEach(registration => {
           if (registration[1] === product[0]) {
-            console.log("registration", registration[1], product[0]);
             productData.inventoryRegistrations.push({
               idInvetory: parseInt(registration[0]),
              idProduct: parseInt(registration[1]),
