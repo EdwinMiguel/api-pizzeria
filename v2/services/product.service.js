@@ -107,7 +107,7 @@ class ProductService {
       const productsList = [];
       const sheetsApi = await getGoogleSheetsClient();
       const spreadsheetId = '1VBk8B9E2uA98Zs3yEqrTl1uFqsRWNVG06LAlqIFazrs';
-      const ranges = ["product", "productoCantidades", "categoria", "inventory"];
+      const ranges = ["product", "categorias", "inventory"];
 
       const response = await sheetsApi.spreadsheets.values.batchGet({
         spreadsheetId: spreadsheetId,
@@ -115,38 +115,35 @@ class ProductService {
       });
 
       const productSheetRows = response.data.valueRanges[0].values;
-      const productQuantitiesSheetRows = response.data.valueRanges[1].values;
-      const categorySheetRows = response.data.valueRanges[2].values;
-      const inventorySheetRows = response.data.valueRanges[3].values;
+      const categorySheetRows = response.data.valueRanges[1].values;
+      const inventorySheetRows = response.data.valueRanges[2].values;
 
       productSheetRows.shift()
-      productQuantitiesSheetRows.shift()
-      inventorySheetRows.shift()
 
       productSheetRows.forEach(product => {
         const productData = {};
-        productData.idProduct = product[0];
+        productData.quantities = [];
+
+        productData.idProduct = parseInt(product[0]);
         productData.name = product[1];
         productData.description = product[2];
         productData.measurementUnit = product[3];
         productData.price = parseInt(product[4]);
+        productData.idSupplier = parseInt(product[6]) || null;
+        productData.quantities.push(product[7] || null);
+        productData.stock = product[8] || 0;
+        productData.total = product[9] || 0;
 
+        console.log(productData);
         categorySheetRows.forEach(category => {
           if (category[0] === product[5]) {
             productData.category = {
-              idCategory: category[0],
+              idCategory: parseInt(category[0]),
               name: category[1]
             };
           }
         });
 
-
-        productData.quantities = [];
-        productQuantitiesSheetRows.forEach(quantity => {
-          if (quantity[0] === product[0]) {
-            productData.quantities.push(quantity[1]);
-          }
-        });
 
         productData.inventoryRegistrations = [];
 
@@ -156,23 +153,15 @@ class ProductService {
           if (registration[1] === product[0]) {
             console.log("registration", registration[1], product[0]);
             productData.inventoryRegistrations.push({
-              idInvetory: registration[0],
-             idProduct: registration[1],
+              idInvetory: parseInt(registration[0]),
+             idProduct: parseInt(registration[1]),
              quantity: parseInt(registration[2]),
              transaction: registration[3],
              date: registration[4],
              idOrder: registration[5] || null,
-             notes: registration[6] || ''
+             notes: registration[6] || '',
+             idSupplier: registration[7]
             });
-
-            if (registration[3] === "ingreso") {
-              stock += parseInt(registration[2]);
-            } else if (registration[3] === "salida") {
-              stock -= parseInt(registration[2]);
-            }
-            productData.stock = stock;
-            productData.basePrice = parseInt(productData.stock) * product[4];
-            productData.finalPrice = ((15 * parseInt(productData.basePrice)) / 100) + productData.basePrice;
           }
         });
 
@@ -181,7 +170,7 @@ class ProductService {
 
       this.products = productsList;
       return this.products;
-       // Formato de objeto
+       // Formato de output:
       // {
       //   idProducto: 1,
       //   name: "ATÚN",
