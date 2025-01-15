@@ -89,8 +89,7 @@ class ProductService {
       const categorySheetRows = response.data.valueRanges[1].values;
       const inventorySheetRows = response.data.valueRanges[2].values;
 
-      productSheetRows.shift()
-
+      productSheetRows.shift();
       productSheetRows.forEach(product => {
         const productData = {};
         productData.quantities = [];
@@ -114,11 +113,9 @@ class ProductService {
           }
         });
 
-
+        console.log(productData);
         productData.inventoryRegistrations = [];
 
-        productData.stock = 0;
-        let stock = 0;
         inventorySheetRows.forEach(registration => {
           if (registration[1] === product[0]) {
             productData.inventoryRegistrations.push({
