@@ -419,7 +419,7 @@ class OrdersService {
     try {
       const sheetsApi = await getGoogleSheetsClient();
       const spreadsheetId = '1VBk8B9E2uA98Zs3yEqrTl1uFqsRWNVG06LAlqIFazrs';
-      const ranges = ["pedido", "pedidoDetalle", "product", "inventory!A:G"];
+      const ranges = ["pedido", "pedidoDetalle", "product", "inventory!A:H"];
 
       const response = await sheetsApi.spreadsheets.values.batchGet({
         spreadsheetId: spreadsheetId,
@@ -428,7 +428,9 @@ class OrdersService {
 
       const ordersSheetRows = response.data.valueRanges[0].values;
       const ordersDetailsSheetRows = response.data.valueRanges[1].values;
+      const productSheetRows = response.data.valueRanges[2].values;
       const inventorySheetRows = response.data.valueRanges[3].values;
+
       const date = () => {
         const now = new Date();
         // Convertir a hora de Colombia (UTC-5)
@@ -449,8 +451,6 @@ class OrdersService {
 
       if (status === 'entregado') {
         const order = ordersSheetRows.filter(order => order[0] === id);
-
-
         const orderDetails = ordersDetailsSheetRows.filter(row => row[1] === id);
 
         let inventoryNextId = inventorySheetRows.length === 1 ? 1 : (inventorySheetRows.length - 1) + 1;
@@ -460,6 +460,8 @@ class OrdersService {
           range: ranges[3],
           values: productsShipped,
         };
+
+        // Crea las filas para las salidas que se van a registrar en inventory con los datos de cada registro de pedidoDetalle
         orderDetails.forEach(element => {
           if (productsShipped.length === 0) {
             productsShipped.push([inventoryNextId, element[2], element[3], 'salida', date(), element[1], '']);
@@ -480,14 +482,12 @@ class OrdersService {
         });
 
         if (savedRegistrations.statusText === "OK") {
-          const orderChangesData = {
-          }
+          const orderChangesData = {};
 
           const orderIndex = ordersSheetRows.findIndex(element => element[0] === id);
 
           orderChangesData.range = `pedido!E${orderIndex + 1}`;
           orderChangesData.values = [['entregado']];
-          console.log(orderChangesData);
 
           const updatedOrderStatus = await sheetsApi.spreadsheets.values.update({
             spreadsheetId: spreadsheetId,
@@ -498,20 +498,66 @@ class OrdersService {
             },
           });
 
-          if (updatedOrderStatus.statusText === "OK") {
-            const orderUpdated = JSON.parse(updatedOrderStatus.config.body).values[0];
-            return {
-              success: true,
-              message: 'Datos actualizados correctamente.',
-              status: orderUpdated[0],
-              idOrder: id
+          if (updatedOrderStatus.statusText === "OK") { // Proceso para descontar del stock la salida de productos:
+            productSheetRows.shift();
+            let rowsToUpdate = [];
+
+            for (const row of productsShipped) {
+              const productIndex = productSheetRows.findIndex(product => product[0] === row[1]);
+              const product = productSheetRows.find(product => product[0] === row[1]);
+
+              let newQuantity;
+              let newTotal;
+
+              if (product[8] === undefined || parseInt(product[8]) <= 0 || parseInt(product[8]) < parseInt(row[2])) {
+                throw new Error(JSON.stringify({
+                  message: `Stock inválido o insuficiente para el producto: ${product[1]}`
+                }));
+              }
+
+              if (parseInt(product[8]) >= parseInt(row[2])) {
+                newQuantity = parseInt(product[8]) - parseInt(row[2]);
+                newTotal = newQuantity * parseInt(product[4]);
+
+                rowsToUpdate.push({
+                  updateCells: {
+                    range: {
+                      sheetId: 23587344,
+                      startRowIndex: productIndex + 1, // Fila de inicio
+                      endRowIndex: productIndex + 2, // Fila de fin
+                      startColumnIndex: 8, // Columna de inicio (para las dos últimas columnas)
+                      endColumnIndex: 10, // Columna de fin
+                    },
+                    rows: [
+                      {
+                        values: [
+                          { userEnteredValue: { numberValue: newQuantity } }, // Columna 8
+                          { userEnteredValue: { numberValue: newTotal } }, // Columna 9
+                        ],
+                      },
+                    ],
+                    fields: "*",
+                  },
+                });
+              }
             }
+
+            let updatedStock = await sheetsApi.spreadsheets.batchUpdate({
+              spreadsheetId,
+              resource: { requests: rowsToUpdate },
+            });
+
+              return {
+                success: true,
+                message: 'Datos actualizados correctamente.',
+                status: 'Entregado',
+                idOrder: id
+              }
           }
         }
       }
-
     } catch (error) {
-
+      throw new Error(error.message || 'Error al actualizar el estado del pedido');
     }
   }
 }

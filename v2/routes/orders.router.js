@@ -54,20 +54,18 @@ router.patch('/:id/status', async (req, res) => {
     }
 
     const updated = await service.updateStatus(id, status);
-
     if (updated && updated.success) {
       res.status(200).json(updated);
     } else {
       res.status(500).json({
         success: false,
-        message: 'Ocurrió un error al actualizar el estado del pedido.',
+        message: 'No hay suficiente stock.',
       });
     }
   } catch (error) {
-    console.log(error);
     res.status(500).json({
       success: false,
-      message: 'Error interno del servidor',
+      message: error.message,
     });
   }
 });
