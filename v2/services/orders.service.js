@@ -416,6 +416,7 @@ class OrdersService {
   }
 
   async updateStatus(id, status) {
+    console.log(id, status);
     try {
       const sheetsApi = await getGoogleSheetsClient();
       const spreadsheetId = '1VBk8B9E2uA98Zs3yEqrTl1uFqsRWNVG06LAlqIFazrs';
@@ -555,6 +556,39 @@ class OrdersService {
               }
           }
         }
+      }
+
+      if (status === "pagado") {
+        const orderChangesData = {};
+
+          const orderIndex = ordersSheetRows.findIndex(element => element[0] === id);
+
+          orderChangesData.range = `pedido!E${orderIndex + 1}`;
+          orderChangesData.values = [['pagado']];
+
+          const updatedOrderStatus = await sheetsApi.spreadsheets.values.update({
+            spreadsheetId: spreadsheetId,
+            range: orderChangesData.range,
+            valueInputOption: 'RAW',
+            requestBody: {
+              values: orderChangesData.values,
+            },
+          });
+
+          if (updatedOrderStatus.statusText === "OK") {
+            return {
+              success: true,
+              message: 'Pedido cambiado a entregado correctamente.',
+              status: 'Entregado',
+              idOrder: id
+            }
+          } else {
+            return {
+              success: false,
+              message: 'Ocurrio un error al cambiar el estado del pedido.',
+              idOrder: id
+            }
+          }
       }
     } catch (error) {
       throw new Error(error.message || 'Error al actualizar el estado del pedido');
