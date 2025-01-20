@@ -29,7 +29,7 @@ class OrdersService {
       let orderNextId = orderSheetRows.length === 1 ? 1 : (orderSheetRows.length - 1) + 1;
 
       customersSheetRows.shift();
-      let idCustomer = customersSheetRows.find(row => row[1] === newOrderData.idUser)[0];
+      let idCustomer = customersSheetRows.find(row => row[1] === newOrderData.user)[0];
 
       const date = () => {
         const now = new Date();
@@ -416,7 +416,6 @@ class OrdersService {
   }
 
   async updateStatus(id, status) {
-    console.log(id, status);
     try {
       const sheetsApi = await getGoogleSheetsClient();
       const spreadsheetId = '1VBk8B9E2uA98Zs3yEqrTl1uFqsRWNVG06LAlqIFazrs';

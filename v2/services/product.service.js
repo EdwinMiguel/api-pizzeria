@@ -92,7 +92,6 @@ class ProductService {
       productSheetRows.shift();
       productSheetRows.forEach(product => {
         const productData = {};
-        productData.quantities = [];
 
         productData.idProduct = parseInt(product[0]);
         productData.name = product[1];
@@ -100,9 +99,12 @@ class ProductService {
         productData.measurementUnit = product[3];
         productData.price = parseInt(product[4]);
         productData.idSupplier = parseInt(product[6]) || null;
-        productData.quantities.push(product[7] || null);
-        productData.stock = product[8] || 0;
-        productData.total = product[9] || 0;
+
+        const SeVendePorCantidadesDe = product[7].split(",").map(number => Number(number.trim()));
+
+        productData.quantities = SeVendePorCantidadesDe;
+        productData.stock = parseInt(product[8]) || 0;
+        productData.total = parseInt(product[9]) || 0;
 
         categorySheetRows.forEach(category => {
           if (category[0] === product[5]) {
@@ -113,7 +115,6 @@ class ProductService {
           }
         });
 
-        console.log(productData);
         productData.inventoryRegistrations = [];
 
         inventorySheetRows.forEach(registration => {
