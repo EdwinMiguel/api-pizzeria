@@ -20,13 +20,13 @@ class OrdersService {
         spreadsheetId: spreadsheetId,
         ranges: ranges,
       });
-
+      
       const orderSheetRows = sheets.data.valueRanges[0].values;
       const orderDetailsSheetRows = sheets.data.valueRanges[1].values;
       const customersSheetRows = sheets.data.valueRanges[2].values;
       const productsSheetRows = sheets.data.valueRanges[3].values;
 
-      let orderNextId = orderSheetRows.length === 1 ? 1 : (orderSheetRows.length - 1) + 1;
+      let orderNextId =  orderSheetRows[orderSheetRows.length - 1][0] === "idPedido" ? 1 : Number(orderSheetRows[orderSheetRows.length - 1][0]) + 1;
 
       customersSheetRows.shift();
       let idCustomer = customersSheetRows.find(row => row[1] === newOrderData.user)[0];
@@ -34,7 +34,7 @@ class OrdersService {
       const date = () => {
         const now = new Date();
         // Convertir a hora de Colombia (UTC-5)
-        const colombiaTime = new Date(now.getTime() - (5 * 60 * 60 * 1000));
+        const colombiaTime = new Date(now.getTime() - (5 * 60 * 60 * 1000)); 
 
         // Formatear la fecha y hora
         const year = colombiaTime.getUTCFullYear();
@@ -49,7 +49,7 @@ class OrdersService {
         return timestamp;
       }
 
-      let orderDetailsNextId = orderDetailsSheetRows.length === 1 ? 1 : (orderDetailsSheetRows.length - 1) + 1;
+      let orderDetailsNextId = orderDetailsSheetRows[orderDetailsSheetRows.length - 1][0] === "idOrderDetail" ? 1 : Number(orderDetailsSheetRows[orderDetailsSheetRows.length - 1][0]) + 1;
 
       //lista de cada de todos los registros de un solo pedido en pedidoDetalle
       const orderDetailsList = [];
@@ -148,6 +148,7 @@ class OrdersService {
         },
       }
     } catch (error) {
+      console.log(error);
       return {
         success: false,
         message: 'Error al agregar las filas',
@@ -453,7 +454,7 @@ class OrdersService {
         const order = ordersSheetRows.filter(order => order[0] === id);
         const orderDetails = ordersDetailsSheetRows.filter(row => row[1] === id);
 
-        let inventoryNextId = inventorySheetRows.length === 1 ? 1 : (inventorySheetRows.length - 1) + 1;
+        let inventoryNextId = inventorySheetRows[inventorySheetRows.length - 1][0] === "idInventory" ? 1 : Number(inventorySheetRows[inventorySheetRows.length - 1][0]) + 1;
 
         const productsShipped = [];
         const shippedProductsData = {
