@@ -168,19 +168,19 @@ class InventoryService {
         spreadsheetId: spreadsheetId,
         ranges: ranges,
       });
-
+      
       const inventorySheetData = getSheets.data.valueRanges[0].values;
       const productSheetData = getSheets.data.valueRanges[1].values;
       const proveedorSheetData = getSheets.data.valueRanges[2].values;
       const registrationsList = [];
-
+      
+      
       inventorySheetData.shift()
       inventorySheetData.forEach(row => {
-
         let registration;
-
+        
         const productData = productSheetData.find(productRow => productRow[0].toLowerCase().trim() === row[1].toLowerCase().trim());
-
+        
         const supplierData = proveedorSheetData.find(supplierRow => supplierRow[0] === row[7]);
 
         if (row[3].toLowerCase().trim() === "salida") {
@@ -191,7 +191,7 @@ class InventoryService {
             notes: row[6] || null,
             product: {
               id: parseInt(row[1]),
-              name: productData[1],
+              name: productData === undefined ? "No se encontro" : productData[1],
               quantity: parseInt(row[2]),
             },
             supplier: {
@@ -208,7 +208,7 @@ class InventoryService {
             notes: row[6] || null,
             product: {
               id: parseInt(row[1]),
-              name: productData[1],
+              name: productData === undefined ? "No se encontro" : productData[1],
               quantity: parseInt(row[2]),
             },
             supplier: {
@@ -220,6 +220,8 @@ class InventoryService {
 
         registrationsList.push(registration);
       });
+
+      console.log(registrationsList)
 
       this.registrations = registrationsList;
       return this.registrations;
