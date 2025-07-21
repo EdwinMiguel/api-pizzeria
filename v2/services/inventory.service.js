@@ -22,7 +22,7 @@ class InventoryService {
       productsSheetRows.shift();
       const product = productsSheetRows.find(row => row[0] === data.idProduct);
 
-      let nextInventoryId = inventorySheetRows.length === 1 ? 1 : (inventorySheetRows.length - 1) + 1;
+      let nextInventoryId = inventorySheetRows[inventorySheetRows.length - 1][0] === "idInventory" ? 1 : Number(inventorySheetRows[inventorySheetRows.length - 1][0]) + 1;;
 
       const date = () => {
         const now = new Date();
