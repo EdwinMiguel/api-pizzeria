@@ -28,7 +28,7 @@ class ProductService {
         })
       }
 
-      let productNextId = productSheetRows.length === 1 ? 1 : (productSheetRows.length - 1) + 1;
+      let productNextId =  productSheetRows[productSheetRows.length - 1][0] === "idProduct" ? 1 : Number(productSheetRows[productSheetRows.length - 1][0]) + 1;
 
       const productSheetValuesToAppend = {
         range: ranges[0],
